@@ -1,5 +1,16 @@
+---
 apiVersion: v1
-appVersion: "1.0"
-description: A Helm chart for Kubernetes
+appVersion: "2.3.8"
+description: "wallabag is a self hostable application for saving web pages: Save and classify articles. Read them later. Freely. https://wallabag.org"
 name: wallabag
 version: 0.1.0
+keywords:
+  - wallabag
+  - read-it-later
+home: https://wallabag.org
+icon: https://wallabag.org/user/themes/boxify/img/logo-wallabag-black.svg
+sources:
+  - https://github.com/wallabag/wallabag
+maintainers:
+  - name: Gavin Mogan
+    email: helm@gavinmogan.com

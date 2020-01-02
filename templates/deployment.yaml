@@ -6,6 +6,10 @@ metadata:
 {{ include "wallabag.labels" . | indent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+{{- if .Values.strategy }}
+  strategy:
+{{ toYaml .Values.strategy | indent 4 }}
+{{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "wallabag.name" . }}
@@ -23,12 +27,149 @@ spec:
       serviceAccountName: {{ template "wallabag.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-migrate
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ tpl .Values.image.tag . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['/bin/su']
+          workingDir: '/var/www/wallabag/'
+          args:
+            - -c
+            - "bin/console doctrine:migrations:migrate --env=prod --no-interaction"
+            - -s
+            - /bin/sh
+            - nobody
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_password
+            - {name: SYMFONY__ENV__DATABASE_DRIVER, value: "pdo_pgsql"}
+            - {name: SYMFONY__ENV__DATABASE_DRIVER_CLASS, value: "Wallabag\\CoreBundle\\Doctrine\\DBAL\\Driver\\CustomPostgreSQLDriver"}
+            - name: SYMFONY__ENV__DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_host
+            - name: SYMFONY__ENV__DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_port
+            - name: SYMFONY__ENV__DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_name
+            - name: SYMFONY__ENV__DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_user
+            - name: SYMFONY__ENV__DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_password
+            - name: SYMFONY__ENV__REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: redis_host
+            - name: SYMFONY__ENV__REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: redis_password
+{{ if .Values.wallabag.sentry }}
+            - name: SYMFONY__ENV__SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: sentry_dsn
+{{ end }}
+            - {name: SYMFONY__ENV__FROM_EMAIL, value: {{ .Values.wallabag.email.from | quote }}}
+{{ if .Values.wallabag.email.server }}
+            - {name: SYMFONY__ENV__MAILER_HOST, value: {{ .Values.wallabag.email.server | quote }}}
+{{ end }}
+            - {name: SYMFONY__ENV__DOMAIN_NAME, value: {{ .Values.wallabag.public_url | quote }}}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ tpl .Values.image.tag . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['/bin/s6-svscan']
+          args:
+            - /etc/s6/
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_password
+            - {name: SYMFONY__ENV__DATABASE_DRIVER, value: "pdo_pgsql"}
+            - {name: SYMFONY__ENV__DATABASE_DRIVER_CLASS, value: "Wallabag\\CoreBundle\\Doctrine\\DBAL\\Driver\\CustomPostgreSQLDriver"}
+            - name: SYMFONY__ENV__DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_host
+            - name: SYMFONY__ENV__DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_port
+            - name: SYMFONY__ENV__DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_name
+            - name: SYMFONY__ENV__DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_user
+            - name: SYMFONY__ENV__DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: postgres_password
+            - name: SYMFONY__ENV__REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: redis_host
+            - name: SYMFONY__ENV__REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: redis_password
+{{ if .Values.wallabag.sentry }}
+            - name: SYMFONY__ENV__SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wallabag.fullname" . }}
+                  key: sentry_dsn
+{{ end }}
+            - {name: SYMFONY__ENV__FROM_EMAIL, value: {{ .Values.wallabag.email.from | quote }}}
+{{ if .Values.wallabag.email.server }}
+            - {name: SYMFONY__ENV__MAILER_HOST, value: {{ .Values.wallabag.email.server | quote }}}
+{{ end }}
+            - {name: SYMFONY__ENV__DOMAIN_NAME, value: {{ .Values.wallabag.public_url | quote }}}
           ports:
             - name: http
               containerPort: 80
@@ -43,6 +184,21 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /var/www/wallabag/web/assets/images
+              name: storage
+      volumes:
+        - name: storage
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            {{- if .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaim | quote }}
+            {{- else }}
+            claimName: {{ include "wallabag.fullname" . }}
+            {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

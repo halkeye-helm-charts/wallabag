@@ -5,13 +5,26 @@
 replicaCount: 1
 
 image:
-  repository: nginx
-  tag: stable
+  repository: wallabag/wallabag
+  tag: "{{ .Chart.AppVersion }}"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+
+# Define deployment strategy - IMPORTANT: use rollingUpdate: null when use Recreate strategy.
+# It prevents from merging with existing map keys which are forbidden.
+strategy: {}
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 1
+  #   maxUnavailable: 0
+  #
+  # or
+  #
+  # type: Recreate
+  # rollingUpdate: null
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -66,3 +79,32 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+persistence:
+  enabled: false
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+
+wallabag:
+  postgres:
+    name: "wallabag"
+    user: "wallabag"
+    password: "password"
+    host: "postgresql"
+    port: "5432"
+  redis:
+    host: "redis-master"
+    password: "password"
+  sentry: ""
+  email:
+    from: "no-reply@example.org"
+    server: ""
+  public_url: "http://wallabag.org"
