@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wallabag.fullname" . }}
+  labels:
+{{ include "wallabag.labels" . | indent 4 }}
+data:
+  parameters.yml: |
+    parameters:
+      database_driver: pdo_pgsql
+      database_driver_class: Wallabag\CoreBundle\Doctrine\DBAL\Driver\CustomPostgreSQLDriver
+      database_host: {{ .Values.wallabag.postgres.host | quote }}
+      database_port: {{ .Values.wallabag.postgres.port | quote }}
+      database_name: {{ .Values.wallabag.postgres.name | quote }}
+      database_user: {{ .Values.wallabag.postgres.user | quote }}
+      database_password: {{ .Values.wallabag.postgres.password | quote }}
+      database_path: '%kernel.root_dir%/../data/db/wallabag.sqlite'
+      database_table_prefix: wallabag_
+      database_socket: null
+      database_charset: utf8
+      domain_name: {{ .Values.wallabag.public_url | quote }}
+      mailer_transport: smtp
+      {{ if .Values.wallabag.email.server -}}
+      mailer_host: {{ .Values.wallabag.email.server | quote }}
+      {{ else -}}
+      mailer_host: null
+      {{ end -}}
+      mailer_user: null
+      mailer_password: null
+      locale: en
+      secret: ovmpmAWXRCabNlMgzlzFXDYmCFfzGv
+      twofactor_auth: true
+      twofactor_sender: no-reply@wallabag.org
+      fosuser_registration: true
+      fosuser_confirmation: true
+      from_email: {{ .Values.wallabag.email.from | quote }}
+      rss_limit: 50
+      rabbitmq_host: localhost
+      rabbitmq_port: 5672
+      rabbitmq_user: guest
+      rabbitmq_password: guest
+      rabbitmq_prefetch_count: 10
+      redis_scheme: tcp
+      redis_host: {{ .Values.wallabag.redis.host | quote }}
+      redis_port: 6379
+      redis_path: null
+      redis_password: {{ .Values.wallabag.redis.password | quote }}
+{{ if .Values.wallabag.sentry -}}
+      sentry_dsn: {{ .Values.wallabag.sentry | quote }}
+{{ end -}}

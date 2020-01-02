@@ -19,6 +19,8 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "wallabag.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -33,14 +35,23 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ tpl .Values.image.tag . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ['/bin/su']
+          securityContext:
+            runAsUser: 65534
+            runAsGroup: 65534
+          command: ['/var/www/wallabag/bin/console']
           workingDir: '/var/www/wallabag/'
           args:
-            - -c
-            - "bin/console doctrine:migrations:migrate --env=prod --no-interaction"
-            - -s
-            - /bin/sh
-            - nobody
+            - doctrine:migrations:migrate
+            - --env=prod
+            - --no-interaction
+          volumeMounts:
+            - mountPath: /var/www/wallabag/web/assets/images
+              name: storage
+            - mountPath: /var/www/wallabag/app/config/parameters.yml
+              name: config
+              subPath: parameters.yml
+            - mountPath: /var/www/wallabag/var/cache
+              name: cache
           env:
             - name: POSTGRES_USER
               valueFrom:
@@ -187,7 +198,20 @@ spec:
           volumeMounts:
             - mountPath: /var/www/wallabag/web/assets/images
               name: storage
+            - mountPath: /var/www/wallabag/app/config/parameters.yml
+              name: config
+              subPath: parameters.yml
+            - mountPath: /var/www/wallabag/var/cache
+              name: cache
       volumes:
+        - name: config
+          configMap:
+            name: {{ include "wallabag.fullname" . }}
+            items:
+              - key: parameters.yml
+                path: parameters.yml
+        - name: cache
+          emptyDir: {}
         - name: storage
         {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
