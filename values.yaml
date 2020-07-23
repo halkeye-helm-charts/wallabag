@@ -107,4 +107,6 @@ wallabag:
   email:
     from: "no-reply@example.org"
     server: ""
+    user: ""
+    password: ""
   public_url: "http://wallabag.org"
