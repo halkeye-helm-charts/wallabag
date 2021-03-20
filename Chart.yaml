@@ -4,7 +4,7 @@ type: application
 appVersion: "2.4.2"
 description: "wallabag is a self hostable application for saving web pages: Save and classify articles. Read them later. Freely. https://wallabag.org"
 name: wallabag
-version: 0.2.0
+version: 0.2.1
 keywords:
   - wallabag
   - read-it-later
@@ -18,9 +18,7 @@ maintainers:
     email: helm@gavinmogan.com
 annotations:
   artifacthub.io/changes: |
-    - Switch to Helm3 style packages
-    - Apply default helm template changes such as ingress api version, probe configuration
-    - Update Package Version
+    - Fix typo in pvc template
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/images: |
     - name: wallabag
