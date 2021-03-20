@@ -1,7 +1,16 @@
+{{- $podAnnotations := .Values.podAnnotations }}
+{{- $configAnnotation := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
+{{- $podAnnotations := merge $podAnnotations $configAnnotation }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "wallabag.fullname" . }}
+  {{- if .Values.deploymentAnnotations }}
+  annotations:
+    {{- range $key, $value := .Values.deploymentAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
   labels:
 {{ include "wallabag.labels" . | indent 4 }}
 spec:
@@ -12,15 +21,17 @@ spec:
 {{- end }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "wallabag.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- include "wallabag.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "wallabag.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
+        {{- include "wallabag.selectorLabels" . | nindent 8 }}
+      {{- if .Values.podAnnotations }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := $podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -191,12 +202,27 @@ spec:
                 - curl
                 - -f
                 - http://localhost:80/login
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
           readinessProbe:
             exec:
               command:
                 - curl
                 - -f
                 - http://localhost:80/login
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+{{- if semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion }}
+          startupProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:80/login
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+{{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

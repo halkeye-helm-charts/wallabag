@@ -29,6 +29,8 @@ strategy: {}
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
+  # Annotations to add to the service account
+  annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name:
@@ -37,6 +39,7 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext: {}
+  # privileged: true
   # capabilities:
   #   drop:
   #   - ALL
@@ -45,8 +48,21 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
+  externalTrafficPolicy:
   type: ClusterIP
   port: 80
+
+probes:
+  liveness:
+    failureThreshold: 5
+    periodSeconds: 10
+  readiness:
+    failureThreshold: 5
+    periodSeconds: 10
+  startup:
+    initialDelaySeconds: 5
+    failureThreshold: 30
+    periodSeconds: 10
 
 ingress:
   enabled: false
@@ -80,7 +96,13 @@ tolerations: []
 
 affinity: {}
 
+podAnnotations: {}
+
+deploymentAnnotations: {}
+
+## Persist configuration to a persistent volume
 persistence:
+  # persistence.enabled - Should disk persistence be enabled
   enabled: false
   ## If defined, storageClassName: <storageClass>
   ## If set to "-", storageClassName: "", which disables dynamic provisioning
@@ -88,10 +110,13 @@ persistence:
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
   ##
+  existingClaim: ""
   storageClassName: ""
   accessModes:
     - ReadWriteOnce
   size: 1Gi
+  ## persistence.skipuninstall -- Do not delete the pvc upon helm uninstall
+  skipuninstall: false
 
 wallabag:
   postgres:
