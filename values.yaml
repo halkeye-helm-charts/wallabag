@@ -119,6 +119,7 @@ persistence:
   skipuninstall: false
 
 wallabag:
+  secret: ovmpmAWXRCabNlMgzlzFXDYmCFfzGv
   postgres:
     name: "wallabag"
     user: "wallabag"
@@ -132,4 +133,7 @@ wallabag:
   email:
     from: "no-reply@example.org"
     server: ""
+    encryption: ~
+    auth_mode: ~
   public_url: "http://wallabag.org"
+  server_name: "Your wallabag instance"

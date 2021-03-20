@@ -4,7 +4,7 @@ type: application
 appVersion: "2.4.2"
 description: "wallabag is a self hostable application for saving web pages: Save and classify articles. Read them later. Freely. https://wallabag.org"
 name: wallabag
-version: 0.2.1
+version: 0.2.2
 keywords:
   - wallabag
   - read-it-later
@@ -18,7 +18,7 @@ maintainers:
     email: helm@gavinmogan.com
 annotations:
   artifacthub.io/changes: |
-    - Fix typo in pvc template
+    - Actually working and tested 2.4.2 version
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/images: |
     - name: wallabag
